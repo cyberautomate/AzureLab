@@ -11,7 +11,8 @@ param(
     [string[]]$VpnClientProtocols = @('OpenVPN'),
     [string]$DeploymentTemplate = '..\bicep\hub\gateway.bicep',
     [switch]$AutoDeleteConflicts,
-    [switch]$WhatIf
+    [switch]$WhatIf,
+    [switch]$DebugSecrets
 )
 
 $ErrorActionPreference = 'Stop'
@@ -24,13 +25,49 @@ if (-not (Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyCont
 $templateFile = Join-Path $PSScriptRoot $DeploymentTemplate
 if (-not (Test-Path $templateFile)) { throw "Template not found: $templateFile" }
 
-# Secrets
+# Secrets (AAD P2S requirements). We aggregate all issues then throw once for better UX.
 $secretNames = @('aadTenantId', 'aadAudience')
 $kvSecrets = @{}
+$missing = @()
+$empty = @()
 foreach ($s in $secretNames) {
-    $sec = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $s -ErrorAction Stop
-    if ([string]::IsNullOrWhiteSpace($sec.SecretValueText)) { throw "Secret '$s' is empty in Key Vault '$KeyVaultName'" }
-    $kvSecrets[$s] = $sec.SecretValueText
+    try {
+        $sec = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name $s -ErrorAction Stop
+        $val = $sec.SecretValueText
+        if ([string]::IsNullOrWhiteSpace($val)) {
+            # Fallback: some Az versions can return blank SecretValueText even when value exists (rare / edge). Try secure string marshal.
+            try {
+                $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec.SecretValue)
+                $val = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+                [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+            } catch { }
+        }
+        if ([string]::IsNullOrWhiteSpace($val)) { $empty += $s }
+        else {
+            $val = $val.Trim()
+            # Simple GUID pattern check for aadTenantId only
+            if ($s -eq 'aadTenantId') {
+                $isGuid = ($val.Length -eq 36 -and $val[8] -eq '-' -and $val[13] -eq '-' -and $val[18] -eq '-' -and $val[23] -eq '-')
+                if (-not $isGuid -and $DebugSecrets) { Write-Warning "aadTenantId secret does not look like a GUID; value will be passed as-is (len=$($val.Length))" }
+            }
+            $kvSecrets[$s] = $val
+            if ($DebugSecrets) { Write-Verbose "Retrieved secret $s (length=$($val.Length))" }
+        }
+    }
+    catch {
+        $missing += $s
+    }
+}
+if ($missing.Count -gt 0 -or $empty.Count -gt 0) {
+    $msg = @()
+    if ($missing.Count -gt 0) { $msg += "Missing secrets: $($missing -join ', ')" }
+    if ($empty.Count -gt 0) { $msg += "Empty secrets: $($empty -join ', ')" }
+    $msg += "Key Vault: $KeyVaultName"
+    $msg += "Populate with: set-keyvault-secrets.ps1 -VaultName $KeyVaultName -Secrets @{ aadTenantId='<<tenant-guid>>'; aadAudience='<<server-app-id>>' }"
+    if ($DebugSecrets) {
+        $msg += "Debug details: Az module version = $((Get-Module Az.KeyVault -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1).Version)"
+    }
+    throw ($msg -join '; ')
 }
 
 # Existing gateway conflict detection
