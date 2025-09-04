@@ -1,0 +1,30 @@
+{
+    "basePrefix": "10.0.0.0/16",
+    "hub": {
+        "vnetCidr": "10.0.0.0/22",
+        "subnets": {
+            "hubVmSubnet1": "10.0.0.0/24",
+            "hubVmSubnet2": "10.0.1.0/24",
+            "hubContainerSubnet": "10.0.2.0/24",
+            "hubInfraSubnet": "10.0.3.0/24",
+            "azureFirewallSubnet": "10.0.3.0/26",
+            "gatewaySubnet": "10.0.3.64/27"
+        }
+    },
+    "blue": {
+        "vnetCidr": "10.0.4.0/22",
+        "subnets": {
+            "blueVmSubnet1": "10.0.4.0/24",
+            "blueVmSubnet2": "10.0.5.0/24",
+            "blueContainerSubnet": "10.0.6.0/24"
+        }
+    },
+    "red": {
+        "vnetCidr": "10.0.8.0/22",
+        "subnets": {
+            "redVmSubnet1": "10.0.8.0/24",
+            "redVmSubnet2": "10.0.9.0/24",
+            "redContainerSubnet": "10.0.10.0/24"
+        }
+    }
+}

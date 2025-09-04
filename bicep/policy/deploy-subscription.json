@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.34.44.8038",
+      "templateHash": "9610020065431878900"
+    }
+  },
+  "parameters": {
+    "enforcementMode": {
+      "type": "string",
+      "defaultValue": "Default"
+    }
+  },
+  "variables": {
+    "$fxv#0": "{\r\n  \"properties\": {\r\n    \"displayName\": \"Deny Public IPs in spokes\",\r\n    \"policyType\": \"Custom\",\r\n    \"mode\": \"All\",\r\n    \"description\": \"Prevent creation of public IP addresses in spoke resource groups.\",\r\n    \"policyRule\": {\r\n      \"if\": {\r\n        \"anyOf\": [\r\n          {\r\n            \"field\": \"type\",\r\n            \"equals\": \"Microsoft.Network/publicIPAddresses\"\r\n          }\r\n        ]\r\n      },\r\n      \"then\": {\r\n        \"effect\": \"Deny\"\r\n      }\r\n    }\r\n  }\r\n}",
+    "policyDefinition": "[json(variables('$fxv#0'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Authorization/policyDefinitions",
+      "apiVersion": "2021-06-01",
+      "name": "Deny-Public-IP-Addresses-AzureLab",
+      "properties": "[variables('policyDefinition').properties]"
+    },
+    {
+      "type": "Microsoft.Authorization/policyAssignments",
+      "apiVersion": "2021-06-01",
+      "name": "DenyPublicIPsAssignment-DoNotEnforce",
+      "properties": {
+        "displayName": "Deny public IPs (DoNotEnforce)",
+        "policyDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', 'Deny-Public-IP-Addresses-AzureLab')]",
+        "enforcementMode": "[parameters('enforcementMode')]"
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Authorization/policyDefinitions', 'Deny-Public-IP-Addresses-AzureLab')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "assignmentId": {
+      "type": "string",
+      "value": "[subscriptionResourceId('Microsoft.Authorization/policyAssignments', 'DenyPublicIPsAssignment-DoNotEnforce')]"
+    }
+  }
+}

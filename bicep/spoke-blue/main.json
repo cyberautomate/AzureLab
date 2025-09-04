@@ -1,0 +1,152 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.34.44.8038",
+      "templateHash": "9526549507074900827"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {}
+    }
+  },
+  "variables": {
+    "$fxv#0": "{\r\n  \"basePrefix\": \"10.0.0.0/16\",\r\n  \"hub\": {\r\n    \"vnetCidr\": \"10.0.0.0/22\",\r\n    \"subnets\": {\r\n      \"hubVmSubnet1\": \"10.0.0.0/24\",\r\n      \"hubVmSubnet2\": \"10.0.1.0/24\",\r\n      \"hubContainerSubnet\": \"10.0.2.0/24\",\r\n      \"hubInfraSubnet\": \"10.0.3.0/24\",\r\n      \"azureFirewallSubnet\": \"10.0.3.0/26\",\r\n      \"gatewaySubnet\": \"10.0.3.64/27\"\r\n    }\r\n  },\r\n  \"blue\": {\r\n    \"vnetCidr\": \"10.0.4.0/22\",\r\n    \"subnets\": {\r\n      \"blueVmSubnet1\": \"10.0.4.0/24\",\r\n      \"blueVmSubnet2\": \"10.0.5.0/24\",\r\n      \"blueContainerSubnet\": \"10.0.6.0/24\"\r\n    }\r\n  },\r\n  \"red\": {\r\n    \"vnetCidr\": \"10.0.8.0/22\",\r\n    \"subnets\": {\r\n      \"redVmSubnet1\": \"10.0.8.0/24\",\r\n      \"redVmSubnet2\": \"10.0.9.0/24\",\r\n      \"redContainerSubnet\": \"10.0.10.0/24\"\r\n    }\r\n  }\r\n}\r\n",
+    "ipPlan": "[json(variables('$fxv#0'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "blueVnet",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "vnetName": {
+            "value": "blue-vnet"
+          },
+          "vnetAddressPrefix": {
+            "value": "[variables('ipPlan').blue.vnetCidr]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "subnets": {
+            "value": [
+              {
+                "name": "blue-vm-subnet-1",
+                "prefix": "[variables('ipPlan').blue.subnets.blueVmSubnet1]"
+              },
+              {
+                "name": "blue-vm-subnet-2",
+                "prefix": "[variables('ipPlan').blue.subnets.blueVmSubnet2]"
+              },
+              {
+                "name": "blue-container-subnet",
+                "prefix": "[variables('ipPlan').blue.subnets.blueContainerSubnet]",
+                "delegation": {
+                  "name": "containerDelegation",
+                  "properties": {
+                    "serviceName": "Microsoft.ContainerInstance/containerGroups"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.34.44.8038",
+              "templateHash": "9955639335107073637"
+            }
+          },
+          "parameters": {
+            "vnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "Module to create a VNet with configurable subnets and optional delegations"
+              }
+            },
+            "vnetAddressPrefix": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {}
+            },
+            "subnets": {
+              "type": "array",
+              "defaultValue": []
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2022-07-01",
+              "name": "[parameters('vnetName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "subnets",
+                    "count": "[length(parameters('subnets'))]",
+                    "input": {
+                      "name": "[parameters('subnets')[copyIndex('subnets')].name]",
+                      "properties": "[union(createObject('addressPrefix', parameters('subnets')[copyIndex('subnets')].prefix), if(not(equals(parameters('subnets')[copyIndex('subnets')].delegation, null())), createObject('delegations', createArray(parameters('subnets')[copyIndex('subnets')].delegation)), createObject()))]"
+                    }
+                  }
+                ],
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "[parameters('vnetAddressPrefix')]"
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "vnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+            },
+            "subnetIds": {
+              "type": "array",
+              "copy": {
+                "count": "[length(parameters('subnets'))]",
+                "input": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnets')[copyIndex()].name)]"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "blueVnetId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'blueVnet'), '2022-09-01').outputs.vnetId.value]"
+    }
+  }
+}

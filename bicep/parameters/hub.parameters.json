@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "eastus"
+        },
+        "tags": {
+            "value": {
+                "owner": "team-network",
+                "environment": "lab"
+            }
+        },
+        "vpnP2S": {
+            "value": {
+                "authenticationType": "AzureAD",
+                "aadTenantId": "",
+                "aadAudience": "<AUDIOENCE_OR_APP_ID_URI>",
+                "clientAddressPool": "172.16.201.0/24",
+                "vpnClientProtocols": [
+                    "OpenVPN",
+                    "IkeV2"
+                ]
+            }
+        }
+    }
+}
