@@ -8,7 +8,8 @@
             "hubContainerSubnet": "10.0.2.0/24",
             "hubInfraSubnet": "10.0.3.0/24",
             "azureFirewallSubnet": "10.0.3.0/26",
-            "gatewaySubnet": "10.0.3.64/27"
+            "gatewaySubnet": "10.0.3.64/27",
+            "azureFirewallManagementSubnet": "10.0.3.128/26"
         }
     },
     "blue": {

@@ -15,7 +15,11 @@ resource vnet 'Microsoft.Network/virtualNetworks@2022-07-01' = {
     }
     subnets: [for sn in subnets: {
       name: sn.name
-      properties: union({ addressPrefix: sn.prefix }, sn.delegation != null ? { delegations: [sn.delegation] } : {})
+      // Use contains() so that if 'delegation' property is not provided at all we don't attempt to access a missing member
+      properties: union(
+        { addressPrefix: sn.prefix },
+        contains(sn, 'delegation') && sn.delegation != null ? { delegations: [sn.delegation] } : {}
+      )
     }]
   }
 }

@@ -1,5 +1,12 @@
 param location string = resourceGroup().location
 param tags object = {}
+@description('Firewall tier: Basic | Standard | Premium')
+@allowed([
+  'Basic'
+  'Standard'
+  'Premium'
+])
+param firewallTier string = 'Basic'
 
 var ipPlan = json(loadTextContent('../ip-plan.json'))
 
@@ -33,6 +40,11 @@ module hubVnet '../modules/vnet.bicep' = {
         name: 'AzureFirewallSubnet'
         prefix: ipPlan.hub.subnets.azureFirewallSubnet
       }
+      // Management subnet required for Basic tier
+      {
+        name: 'AzureFirewallManagementSubnet'
+        prefix: ipPlan.hub.subnets.azureFirewallManagementSubnet
+      }
       {
         name: 'GatewaySubnet'
         prefix: ipPlan.hub.subnets.gatewaySubnet
@@ -49,18 +61,13 @@ module firewall '../modules/azureFirewall.bicep' = {
     publicIpName: 'hub-firewall-pip'
     virtualNetworkName: 'hub-vnet'
     subnetName: 'AzureFirewallSubnet'
+    managementSubnetName: 'AzureFirewallManagementSubnet'
+    firewallTier: firewallTier
     tags: tags
   }
-}
-
-module vpn '../modules/vpnGateway.bicep' = {
-  name: 'vpnGateway'
-  params: {
-    gatewayName: 'hub-vpngw'
-    location: location
-    publicIpName: 'hub-vpngw-pip'
-    gatewaySku: 'VpnGw1'
-  }
+  dependsOn: [
+    hubVnet
+  ]
 }
 
 // Create a hub route table skeleton - spokes will reference this route table's id
