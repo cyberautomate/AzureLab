@@ -1,0 +1,215 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.34.44.8038",
+      "templateHash": "15235166047910416695"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "workspaceName": {
+      "type": "string",
+      "defaultValue": "hub-law"
+    },
+    "workspaceSku": {
+      "type": "string",
+      "defaultValue": "PerGB2018"
+    },
+    "retentionInDays": {
+      "type": "int",
+      "defaultValue": 30
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {}
+    },
+    "sentinelName": {
+      "type": "string",
+      "defaultValue": "default"
+    },
+    "customerManagedKey": {
+      "type": "bool",
+      "defaultValue": false
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "hubLogAnalytics",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "workspaceName": {
+            "value": "[parameters('workspaceName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "sku": {
+            "value": "[parameters('workspaceSku')]"
+          },
+          "retentionInDays": {
+            "value": "[parameters('retentionInDays')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.34.44.8038",
+              "templateHash": "12582537292015745582"
+            }
+          },
+          "parameters": {
+            "workspaceName": {
+              "type": "string",
+              "metadata": {
+                "description": "Module to create a Log Analytics workspace"
+              }
+            },
+            "location": {
+              "type": "string"
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "PerGB2018"
+            },
+            "retentionInDays": {
+              "type": "int",
+              "defaultValue": 30
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {}
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2021-06-01",
+              "name": "[parameters('workspaceName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "name": "[parameters('sku')]"
+                },
+                "retentionInDays": "[parameters('retentionInDays')]"
+              }
+            }
+          ],
+          "outputs": {
+            "workspaceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+            },
+            "workspaceCustomerId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName')), '2021-06-01').customerId]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "enableSentinel",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "workspaceName": {
+            "value": "[parameters('workspaceName')]"
+          },
+          "sentinelName": {
+            "value": "[parameters('sentinelName')]"
+          },
+          "customerManagedKey": {
+            "value": "[parameters('customerManagedKey')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.34.44.8038",
+              "templateHash": "14898630748235179985"
+            }
+          },
+          "parameters": {
+            "workspaceName": {
+              "type": "string",
+              "metadata": {
+                "description": "Module to onboard a Log Analytics workspace to Microsoft Sentinel (SecurityInsights)"
+              }
+            },
+            "sentinelName": {
+              "type": "string",
+              "defaultValue": "default",
+              "metadata": {
+                "description": "The sentinel onboarding resource name, usually \"default\""
+              }
+            },
+            "customerManagedKey": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Set to true to indicate the workspace uses customer managed keys"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.SecurityInsights/onboardingStates",
+              "apiVersion": "2025-06-01",
+              "scope": "[format('Microsoft.OperationalInsights/workspaces/{0}', parameters('workspaceName'))]",
+              "name": "[parameters('sentinelName')]",
+              "properties": {
+                "customerManagedKey": "[parameters('customerManagedKey')]"
+              }
+            }
+          ],
+          "outputs": {
+            "sentinelResourceId": {
+              "type": "string",
+              "value": "[extensionResourceId(resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName')), 'Microsoft.SecurityInsights/onboardingStates', parameters('sentinelName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'hubLogAnalytics')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "workspaceId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'hubLogAnalytics'), '2022-09-01').outputs.workspaceId.value]"
+    },
+    "sentinelId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'enableSentinel'), '2022-09-01').outputs.sentinelResourceId.value]"
+    }
+  }
+}
