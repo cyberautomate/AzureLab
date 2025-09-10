@@ -127,3 +127,7 @@ Hub outputs available after deployment (from `bicep/hub/main.bicep`):
 - `firewallPublicIp`
 
 Use these outputs for automation (e.g., tagging, diagnostics, additional route table associations) or to validate firewall IP referenced in spoke route tables if you later add custom UDRs in spokes.
+
+## Firewall P2S Allow Rule
+
+The hub firewall template (`bicep/hub/main.bicep`) now passes a default `p2sAddressPool` (`172.16.201.0/24`) to `azureFirewall.bicep`. If present, the module adds a simple network rule collection named `allow-p2s` permitting any protocol/port from the P2S client pool to any destination. Tighten this later by editing `p2sAddressPool` or the module logic. Set it to an empty string to remove the automatic rule.

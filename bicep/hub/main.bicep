@@ -64,6 +64,8 @@ module firewall '../modules/azureFirewall.bicep' = {
     managementSubnetName: 'AzureFirewallManagementSubnet'
     firewallTier: firewallTier
     tags: tags
+    // Provide same default P2S pool used by gateway module (if later deployed) so firewall allows traffic when gateway added
+    p2sAddressPool: '172.16.201.0/24'
   }
   dependsOn: [
     hubVnet

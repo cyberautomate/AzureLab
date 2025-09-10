@@ -1,0 +1,33 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "westus2"
+        },
+        "vnetName": {
+            "value": "hub-vnet"
+        },
+        "gatewayName": {
+            "value": "hub-vpngw"
+        },
+        "publicIpName": {
+            "value": "hub-vpngw-pip"
+        },
+        "gatewaySku": {
+            "value": "VpnGw1"
+        },
+        "vpnP2S": {
+            "value": {
+                "authenticationType": "AzureAD",
+                "aadTenantId": "<TENANT_ID_OR_URL>",
+                "aadAudience": "<APP_ID_URI_OR_CLIENT_ID>",
+                "clientAddressPool": "172.16.201.0/24",
+                "vpnClientProtocols": [
+                    "OpenVPN",
+                    "IkeV2"
+                ]
+            }
+        }
+    }
+}

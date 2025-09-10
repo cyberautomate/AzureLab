@@ -10,18 +10,6 @@
                 "owner": "team-network",
                 "environment": "lab"
             }
-        },
-        "vpnP2S": {
-            "value": {
-                "authenticationType": "AzureAD",
-                "aadTenantId": "",
-                "aadAudience": "<AUDIOENCE_OR_APP_ID_URI>",
-                "clientAddressPool": "172.16.201.0/24",
-                "vpnClientProtocols": [
-                    "OpenVPN",
-                    "IkeV2"
-                ]
-            }
         }
     }
 }

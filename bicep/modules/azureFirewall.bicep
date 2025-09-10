@@ -18,6 +18,8 @@ param managementSubnetName string = 'AzureFirewallManagementSubnet'
 ])
 param firewallTier string = 'Basic'
 param tags object = {}
+@description('Optional Point-to-Site client address pool CIDR to allow through firewall (adds simple allow network rule collection).')
+param p2sAddressPool string = ''
 
 // Public IP for firewall (data plane)
 resource publicIp 'Microsoft.Network/publicIPAddresses@2022-07-01' = {
@@ -66,17 +68,41 @@ resource firewall 'Microsoft.Network/azureFirewalls@2022-05-01' = {
       }
     ]
     // For Basic tier, supply separate management IP configuration
-    managementIpConfiguration: firewallTier == 'Basic' ? {
-      name: 'azureFirewallMgmtIpConfiguration'
-      properties: {
-        subnet: {
-          id: resourceId('Microsoft.Network/virtualNetworks/subnets', virtualNetworkName, managementSubnetName)
+    managementIpConfiguration: firewallTier == 'Basic'
+      ? {
+          name: 'azureFirewallMgmtIpConfiguration'
+          properties: {
+            subnet: {
+              id: resourceId('Microsoft.Network/virtualNetworks/subnets', virtualNetworkName, managementSubnetName)
+            }
+            publicIPAddress: {
+              id: mgmtPublicIp.id
+            }
+          }
         }
-        publicIPAddress: {
-          id: mgmtPublicIp.id
-        }
-      }
-    } : null
+      : null
+    networkRuleCollections: empty(p2sAddressPool)
+      ? []
+      : [
+          {
+            name: 'allow-p2s'
+            properties: {
+              priority: 200
+              action: {
+                type: 'Allow'
+              }
+              rules: [
+                {
+                  name: 'allow-p2s-any'
+                  sourceAddresses: [p2sAddressPool]
+                  destinationAddresses: ['*']
+                  destinationPorts: ['*']
+                  protocols: ['Any']
+                }
+              ]
+            }
+          }
+        ]
   }
 }
 

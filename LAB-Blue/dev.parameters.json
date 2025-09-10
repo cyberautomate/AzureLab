@@ -1,0 +1,38 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "westus2"
+        },
+        "vnetName": {
+            "value": "labblue-spoke-vnet"
+        },
+        "vnetAddressPrefix": {
+            "value": "10.10.0.0/16"
+        },
+        "subnets": {
+            "value": [
+                {
+                    "name": "default",
+                    "prefix": "10.10.0.0/24"
+                }
+            ]
+        },
+        "hubSubscriptionId": {
+            "value": "<HUB_SUBSCRIPTION_ID>"
+        },
+        "hubVnetName": {
+            "value": "hubVnet"
+        },
+        "hubFirewallPrivateIp": {
+            "value": "<HUB_FIREWALL_PRIVATE_IP>"
+        },
+        "tags": {
+            "value": {
+                "owner": "devops",
+                "env": "dev"
+            }
+        }
+    }
+}

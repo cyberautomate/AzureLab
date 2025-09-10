@@ -1,0 +1,218 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "2144341247530698063"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "westus2",
+      "metadata": {
+        "description": "Create spoke VNet in LAB-Blue subscription and peer to hubVnet"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "labblue-spoke-vnet"
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.10.0.0/16"
+    },
+    "subnets": {
+      "type": "array",
+      "defaultValue": [
+        {
+          "name": "default",
+          "prefix": "10.10.0.0/24"
+        }
+      ]
+    },
+    "hubSubscriptionId": {
+      "type": "string"
+    },
+    "hubVnetName": {
+      "type": "string",
+      "defaultValue": "hubVnet"
+    },
+    "hubFirewallPrivateIp": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {}
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/routeTables",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}-rt', parameters('vnetName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "routes": [
+          {
+            "name": "default-internet",
+            "properties": {
+              "addressPrefix": "0.0.0.0/0",
+              "nextHopType": "VirtualAppliance",
+              "nextHopIpAddress": "[parameters('hubFirewallPrivateIp')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', parameters('vnetName'), parameters('subnets')[0].name)]",
+      "properties": {
+        "addressPrefix": "[parameters('subnets')[0].prefix]",
+        "routeTable": {
+          "id": "[resourceId('Microsoft.Network/routeTables', format('{0}-rt', parameters('vnetName')))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/routeTables', format('{0}-rt', parameters('vnetName')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}-to-{1}-peering', parameters('vnetName'), parameters('hubVnetName'))]",
+      "properties": {
+        "allowVirtualNetworkAccess": true,
+        "allowForwardedTraffic": true,
+        "allowGatewayTransit": false,
+        "useRemoteGateways": true,
+        "remoteVirtualNetwork": {
+          "id": "[subscriptionResourceId(parameters('hubSubscriptionId'), 'Microsoft.Network/virtualNetworks', parameters('hubVnetName'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "vnetModule",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "vnetName": {
+            "value": "[parameters('vnetName')]"
+          },
+          "vnetAddressPrefix": {
+            "value": "[parameters('vnetAddressPrefix')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "subnets": {
+            "value": "[parameters('subnets')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "6975625199912985609"
+            }
+          },
+          "parameters": {
+            "vnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "Module to create a VNet with configurable subnets and optional delegations"
+              }
+            },
+            "vnetAddressPrefix": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {}
+            },
+            "subnets": {
+              "type": "array",
+              "defaultValue": []
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2022-07-01",
+              "name": "[parameters('vnetName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "subnets",
+                    "count": "[length(parameters('subnets'))]",
+                    "input": {
+                      "name": "[parameters('subnets')[copyIndex('subnets')].name]",
+                      "properties": "[union(createObject('addressPrefix', parameters('subnets')[copyIndex('subnets')].prefix), if(and(contains(parameters('subnets')[copyIndex('subnets')], 'delegation'), not(equals(parameters('subnets')[copyIndex('subnets')].delegation, null()))), createObject('delegations', createArray(parameters('subnets')[copyIndex('subnets')].delegation)), createObject()))]"
+                    }
+                  }
+                ],
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "[parameters('vnetAddressPrefix')]"
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "vnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+            },
+            "subnetIds": {
+              "type": "array",
+              "copy": {
+                "count": "[length(parameters('subnets'))]",
+                "input": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnets')[copyIndex()].name)]"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "vnetId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'vnetModule'), '2022-09-01').outputs.vnetId.value]"
+    },
+    "subnetIds": {
+      "type": "array",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'vnetModule'), '2022-09-01').outputs.subnetIds.value]"
+    },
+    "routeTableId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/routeTables', format('{0}-rt', parameters('vnetName')))]"
+    },
+    "peeringId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks/virtualNetworkPeerings', split(format('{0}-to-{1}-peering', parameters('vnetName'), parameters('hubVnetName')), '/')[0], split(format('{0}-to-{1}-peering', parameters('vnetName'), parameters('hubVnetName')), '/')[1])]"
+    }
+  }
+}
