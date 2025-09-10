@@ -48,6 +48,35 @@ Deploy Spoke (example blue):
 az deployment group create --resource-group SPOKE-BLUE --template-file bicep/spoke-blue/main.bicep
 ```
 
+Or include the Blue spoke VNet during a composite deployment of the root template by setting the new boolean parameter:
+
+```powershell
+az deployment group create --resource-group <rg> --template-file bicep/main.bicep --parameters namePrefix=lab environment=dev deployBlueVnet=true
+```
+
+PowerShell script alternative for the blue spoke only:
+Deploy Spoke (example red):
+
+```powershell
+az deployment group create --resource-group SPOKE-RED --template-file bicep/spoke-red/main.bicep
+```
+
+Or via root template together with blue:
+
+```powershell
+az deployment group create --resource-group <rg> --template-file bicep/main.bicep --parameters namePrefix=lab environment=dev deployBlueVnet=true deployRedVnet=true
+```
+
+PowerShell script alternative for the red spoke only:
+
+```powershell
+./scripts/deploy-spoke-red.ps1 -ResourceGroupName Red -Location westus2
+```
+
+```powershell
+./scripts/deploy-spoke-blue.ps1 -ResourceGroupName Blue -Location westus2
+```
+
 ## Learning Bicep
 
 If you're new to Bicep, start here: <https://learn.microsoft.com/azure/azure-resource-manager/bicep/>

@@ -1,0 +1,250 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.34.44.8038",
+      "templateHash": "18245735600821747782"
+    }
+  },
+  "parameters": {
+    "hubResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource group name containing the Hub VNet"
+      }
+    },
+    "hubVnetName": {
+      "type": "string",
+      "defaultValue": "hub-vnet",
+      "metadata": {
+        "description": "Name of the Hub VNet"
+      }
+    },
+    "spokeResourceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource group name containing the Spoke VNet"
+      }
+    },
+    "spokeVnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Spoke VNet"
+      }
+    },
+    "allowForwardedTraffic": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Allow forwarded traffic on both peerings"
+      }
+    },
+    "enableGatewayTransit": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable gateway transit from hub to spoke (hub allows transit, spoke uses remote gateways)"
+      }
+    }
+  },
+  "variables": {
+    "hubVnetId": "[resourceId(subscription().subscriptionId, parameters('hubResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('hubVnetName'))]",
+    "spokeVnetId": "[resourceId(subscription().subscriptionId, parameters('spokeResourceGroupName'), 'Microsoft.Network/virtualNetworks', parameters('spokeVnetName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}-to-{1}', parameters('spokeVnetName'), parameters('hubVnetName'))]",
+      "resourceGroup": "[parameters('spokeResourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "peeringName": {
+            "value": "[format('{0}-to-{1}', parameters('spokeVnetName'), parameters('hubVnetName'))]"
+          },
+          "remoteVnetId": {
+            "value": "[variables('hubVnetId')]"
+          },
+          "localVnetName": {
+            "value": "[parameters('spokeVnetName')]"
+          },
+          "allowForwardedTraffic": {
+            "value": "[parameters('allowForwardedTraffic')]"
+          },
+          "allowGatewayTransit": {
+            "value": false
+          },
+          "useRemoteGateways": {
+            "value": "[parameters('enableGatewayTransit')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.34.44.8038",
+              "templateHash": "7365343667638906488"
+            }
+          },
+          "parameters": {
+            "peeringName": {
+              "type": "string",
+              "metadata": {
+                "description": "Module to create VNet peering between two VNets"
+              }
+            },
+            "remoteVnetId": {
+              "type": "string"
+            },
+            "localVnetName": {
+              "type": "string"
+            },
+            "allowForwardedTraffic": {
+              "type": "bool",
+              "defaultValue": true
+            },
+            "allowGatewayTransit": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "useRemoteGateways": {
+              "type": "bool",
+              "defaultValue": false
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+              "apiVersion": "2022-07-01",
+              "name": "[format('{0}/{1}', parameters('localVnetName'), parameters('peeringName'))]",
+              "properties": {
+                "remoteVirtualNetwork": {
+                  "id": "[parameters('remoteVnetId')]"
+                },
+                "allowVirtualNetworkAccess": true,
+                "allowForwardedTraffic": "[parameters('allowForwardedTraffic')]",
+                "allowGatewayTransit": "[parameters('allowGatewayTransit')]",
+                "useRemoteGateways": "[parameters('useRemoteGateways')]"
+              }
+            }
+          ],
+          "outputs": {
+            "peeringId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/virtualNetworkPeerings', split(format('{0}/{1}', parameters('localVnetName'), parameters('peeringName')), '/')[0], split(format('{0}/{1}', parameters('localVnetName'), parameters('peeringName')), '/')[1])]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}-to-{1}', parameters('hubVnetName'), parameters('spokeVnetName'))]",
+      "resourceGroup": "[parameters('hubResourceGroupName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "peeringName": {
+            "value": "[format('{0}-to-{1}', parameters('hubVnetName'), parameters('spokeVnetName'))]"
+          },
+          "remoteVnetId": {
+            "value": "[variables('spokeVnetId')]"
+          },
+          "localVnetName": {
+            "value": "[parameters('hubVnetName')]"
+          },
+          "allowForwardedTraffic": {
+            "value": "[parameters('allowForwardedTraffic')]"
+          },
+          "allowGatewayTransit": {
+            "value": "[parameters('enableGatewayTransit')]"
+          },
+          "useRemoteGateways": {
+            "value": false
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.34.44.8038",
+              "templateHash": "7365343667638906488"
+            }
+          },
+          "parameters": {
+            "peeringName": {
+              "type": "string",
+              "metadata": {
+                "description": "Module to create VNet peering between two VNets"
+              }
+            },
+            "remoteVnetId": {
+              "type": "string"
+            },
+            "localVnetName": {
+              "type": "string"
+            },
+            "allowForwardedTraffic": {
+              "type": "bool",
+              "defaultValue": true
+            },
+            "allowGatewayTransit": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "useRemoteGateways": {
+              "type": "bool",
+              "defaultValue": false
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+              "apiVersion": "2022-07-01",
+              "name": "[format('{0}/{1}', parameters('localVnetName'), parameters('peeringName'))]",
+              "properties": {
+                "remoteVirtualNetwork": {
+                  "id": "[parameters('remoteVnetId')]"
+                },
+                "allowVirtualNetworkAccess": true,
+                "allowForwardedTraffic": "[parameters('allowForwardedTraffic')]",
+                "allowGatewayTransit": "[parameters('allowGatewayTransit')]",
+                "useRemoteGateways": "[parameters('useRemoteGateways')]"
+              }
+            }
+          ],
+          "outputs": {
+            "peeringId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/virtualNetworkPeerings', split(format('{0}/{1}', parameters('localVnetName'), parameters('peeringName')), '/')[0], split(format('{0}/{1}', parameters('localVnetName'), parameters('peeringName')), '/')[1])]"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "hubToSpokePeeringId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('hubResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-to-{1}', parameters('hubVnetName'), parameters('spokeVnetName'))), '2022-09-01').outputs.peeringId.value]"
+    },
+    "spokeToHubPeeringId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('spokeResourceGroupName')), 'Microsoft.Resources/deployments', format('{0}-to-{1}', parameters('spokeVnetName'), parameters('hubVnetName'))), '2022-09-01').outputs.peeringId.value]"
+    }
+  }
+}

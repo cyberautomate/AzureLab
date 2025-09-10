@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.34.44.8038",
-      "templateHash": "9526549507074900827"
+      "templateHash": "18278694122490417996"
     }
   },
   "parameters": {
@@ -19,7 +19,7 @@
     }
   },
   "variables": {
-    "$fxv#0": "{\r\n  \"basePrefix\": \"10.0.0.0/16\",\r\n  \"hub\": {\r\n    \"vnetCidr\": \"10.0.0.0/22\",\r\n    \"subnets\": {\r\n      \"hubVmSubnet1\": \"10.0.0.0/24\",\r\n      \"hubVmSubnet2\": \"10.0.1.0/24\",\r\n      \"hubContainerSubnet\": \"10.0.2.0/24\",\r\n      \"hubInfraSubnet\": \"10.0.3.0/24\",\r\n      \"azureFirewallSubnet\": \"10.0.3.0/26\",\r\n      \"gatewaySubnet\": \"10.0.3.64/27\"\r\n    }\r\n  },\r\n  \"blue\": {\r\n    \"vnetCidr\": \"10.0.4.0/22\",\r\n    \"subnets\": {\r\n      \"blueVmSubnet1\": \"10.0.4.0/24\",\r\n      \"blueVmSubnet2\": \"10.0.5.0/24\",\r\n      \"blueContainerSubnet\": \"10.0.6.0/24\"\r\n    }\r\n  },\r\n  \"red\": {\r\n    \"vnetCidr\": \"10.0.8.0/22\",\r\n    \"subnets\": {\r\n      \"redVmSubnet1\": \"10.0.8.0/24\",\r\n      \"redVmSubnet2\": \"10.0.9.0/24\",\r\n      \"redContainerSubnet\": \"10.0.10.0/24\"\r\n    }\r\n  }\r\n}\r\n",
+    "$fxv#0": "{\r\n    \"basePrefix\": \"10.0.0.0/16\",\r\n    \"hub\": {\r\n        \"vnetCidr\": \"10.0.0.0/22\",\r\n        \"subnets\": {\r\n            \"hubVmSubnet1\": \"10.0.0.0/24\",\r\n            \"hubVmSubnet2\": \"10.0.1.0/24\",\r\n            \"hubContainerSubnet\": \"10.0.2.0/24\",\r\n            \"hubInfraSubnet\": \"10.0.3.0/24\",\r\n            \"azureFirewallSubnet\": \"10.0.3.0/26\",\r\n            \"gatewaySubnet\": \"10.0.3.64/27\",\r\n            \"azureFirewallManagementSubnet\": \"10.0.3.128/26\"\r\n        }\r\n    },\r\n    \"blue\": {\r\n        \"vnetCidr\": \"10.0.4.0/22\",\r\n        \"subnets\": {\r\n            \"blueVmSubnet1\": \"10.0.4.0/24\",\r\n            \"blueVmSubnet2\": \"10.0.5.0/24\",\r\n            \"blueContainerSubnet\": \"10.0.6.0/24\"\r\n        }\r\n    },\r\n    \"red\": {\r\n        \"vnetCidr\": \"10.0.8.0/22\",\r\n        \"subnets\": {\r\n            \"redVmSubnet1\": \"10.0.8.0/24\",\r\n            \"redVmSubnet2\": \"10.0.9.0/24\",\r\n            \"redContainerSubnet\": \"10.0.10.0/24\"\r\n        }\r\n    }\r\n}",
     "ipPlan": "[json(variables('$fxv#0'))]"
   },
   "resources": [
@@ -75,7 +75,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.34.44.8038",
-              "templateHash": "9955639335107073637"
+              "templateHash": "11484965245785401715"
             }
           },
           "parameters": {
@@ -114,7 +114,7 @@
                     "count": "[length(parameters('subnets'))]",
                     "input": {
                       "name": "[parameters('subnets')[copyIndex('subnets')].name]",
-                      "properties": "[union(createObject('addressPrefix', parameters('subnets')[copyIndex('subnets')].prefix), if(not(equals(parameters('subnets')[copyIndex('subnets')].delegation, null())), createObject('delegations', createArray(parameters('subnets')[copyIndex('subnets')].delegation)), createObject()))]"
+                      "properties": "[union(createObject('addressPrefix', parameters('subnets')[copyIndex('subnets')].prefix), if(and(contains(parameters('subnets')[copyIndex('subnets')], 'delegation'), not(equals(parameters('subnets')[copyIndex('subnets')].delegation, null()))), createObject('delegations', createArray(parameters('subnets')[copyIndex('subnets')].delegation)), createObject()))]"
                     }
                   }
                 ],
