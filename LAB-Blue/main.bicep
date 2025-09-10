@@ -1,6 +1,6 @@
 @description('Create spoke VNet in LAB-Blue subscription and peer to hubVnet')
 param location string = 'westus2'
-param vnetName string = 'labblue-spoke-vnet'
+param vnetName string = 'devVnet'
 param vnetAddressPrefix string = '10.10.0.0/16'
 param subnets array = [
   {
@@ -10,7 +10,10 @@ param subnets array = [
 ]
 param hubSubscriptionId string
 param hubVnetName string = 'hubVnet'
-param hubFirewallPrivateIp string // optional: if you need to reference firewall IP for UDR next hop
+@description('Optional: resource group in the hub subscription where the hub VNet lives. If empty, subscription-level resourceId will be used.')
+param hubVnetResourceGroup string = 'Hub'
+@description('Optional: private IP of the hub firewall to use as next hop for outbound UDR. Leave empty to skip creating the route.')
+param hubFirewallPrivateIp string = '10.0.3.4'
 param tags object = {}
 
 // Create VNet using shared module
@@ -31,7 +34,7 @@ resource rt 'Microsoft.Network/routeTables@2022-07-01' = {
   location: location
   tags: tags
   properties: {
-    routes: [
+    routes: hubFirewallPrivateIp != '' ? [
       {
         name: 'default-internet'
         properties: {
@@ -41,7 +44,7 @@ resource rt 'Microsoft.Network/routeTables@2022-07-01' = {
           nextHopIpAddress: hubFirewallPrivateIp
         }
       }
-    ]
+    ] : []
   }
 }
 
@@ -55,21 +58,28 @@ resource subnetWithRt 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
       id: rt.id
     }
   }
+  dependsOn: [
+    vnetModule
+  ]
 }
 
 // Create VNet peering - spoke to hub (will be created in this subscription only)
 resource spokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2022-07-01' = {
-  name: '${vnetName}-to-${hubVnetName}-peering'
+  name: '${vnetName}/${vnetName}-to-${hubVnetName}-peering'
   properties: {
     allowVirtualNetworkAccess: true
     allowForwardedTraffic: true
     allowGatewayTransit: false
     useRemoteGateways: true // use hub's gateway/firewall for outbound
     remoteVirtualNetwork: {
-      id: subscriptionResourceId(hubSubscriptionId, 'Microsoft.Network/virtualNetworks', hubVnetName)
+      id: hubVnetResourceGroup != ''
+        ? resourceId(hubSubscriptionId, hubVnetResourceGroup, 'Microsoft.Network/virtualNetworks', hubVnetName)
+        : subscriptionResourceId(hubSubscriptionId, 'Microsoft.Network/virtualNetworks', hubVnetName)
     }
   }
-  dependsOn: []
+  dependsOn: [
+    vnetModule
+  ]
 }
 
 output vnetId string = vnetModule.outputs.vnetId

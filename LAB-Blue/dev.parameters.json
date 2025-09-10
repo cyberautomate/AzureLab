@@ -6,7 +6,7 @@
             "value": "westus2"
         },
         "vnetName": {
-            "value": "labblue-spoke-vnet"
+            "value": "devVnet"
         },
         "vnetAddressPrefix": {
             "value": "10.10.0.0/16"
@@ -20,13 +20,13 @@
             ]
         },
         "hubSubscriptionId": {
-            "value": "<HUB_SUBSCRIPTION_ID>"
+            "value": "986c78a5-0e1b-4d04-8fe5-884f03e86c17"
         },
         "hubVnetName": {
             "value": "hubVnet"
         },
         "hubFirewallPrivateIp": {
-            "value": "<HUB_FIREWALL_PRIVATE_IP>"
+            "value": "10.0.3.4"
         },
         "tags": {
             "value": {
