@@ -1,7 +1,7 @@
 param(
     [string]$ResourceGroupName = 'hub',
     [string]$Location = 'westus2',
-    [string]$DeploymentName = 'hub-gateway',
+    [string]$DeploymentName = 'hub-vpngateway',
     [string]$KeyVaultName = 'dahalllab-dev-kv',
     [string]$VnetName = 'hub-vnet',
     [string]$GatewayName = 'hub-vpngw',
@@ -40,7 +40,8 @@ foreach ($s in $secretNames) {
                 $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec.SecretValue)
                 $val = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
                 [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
-            } catch { }
+            }
+            catch { }
         }
         if ([string]::IsNullOrWhiteSpace($val)) { $empty += $s }
         else {
